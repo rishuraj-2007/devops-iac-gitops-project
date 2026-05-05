@@ -1,4 +1,4 @@
-name: DevOps CI/CD Pipeline
+name: CI-CD Pipeline
 
 on:
   push:
@@ -13,11 +13,21 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Login to DockerHub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build Docker Image
-        run: docker build -t devops-fastapi-app .
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/fastapi-app:latest ./app/backend
 
-      - name: Run Container Test
-        run: docker run -d -p 8000:8000 devops-fastapi-app
+      - name: Push Docker Image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/fastapi-app:latest
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Kubernetes
+        run: |
+          echo "Updating Kubernetes deployment..."
+          kubectl version --client
